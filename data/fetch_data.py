@@ -9,6 +9,13 @@ class DataFetcher:
     def __init__(self):
         self.logger = logger
     
+    def _normalize_columns(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Flater ut eventuelle MultiIndex-kolonner fra yfinance."""
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = data.columns.get_level_values(0)
+            data = data.loc[:, ~data.columns.duplicated()]
+        return data
+    
     def fetch_data(self, symbol: str, start_date: str, end_date: str, interval: str = '1d') -> pd.DataFrame:
         """
         Henter prisdata fra Yahoo Finance
@@ -37,6 +44,7 @@ class DataFetcher:
                 self.logger.error(f"Ingen data funnet for {symbol}")
                 return pd.DataFrame()
             
+            data = self._normalize_columns(data)
             self.logger.info(f"Hentet {len(data)} rader for {symbol}")
             return data
             

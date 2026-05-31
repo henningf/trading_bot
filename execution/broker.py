@@ -1,4 +1,4 @@
-from ib_insync import *
+import asyncio
 from config.config import IBKR_HOST, IBKR_PORT, IBKR_CLIENT_ID, IBKR_ACCOUNT_ID
 from utils.logger import logger
 
@@ -6,6 +6,10 @@ class IBKRBroker:
     """Integrasjon med Interactive Brokers"""
     
     def __init__(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        from ib_insync import IB
+
         self.ib = IB()
         self.logger = logger
         self.connected = False
@@ -63,6 +67,8 @@ class IBKRBroker:
             return False
         
         try:
+            from ib_insync import Stock, MarketOrder
+
             # Opprett kontrakt
             contract = Stock(symbol, 'SMART', 'USD')
             
