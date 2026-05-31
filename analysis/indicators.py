@@ -29,9 +29,12 @@ class TechnicalIndicators:
         delta = data[column].diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
-        
+
+        # Når loss == 0 (kun oppgang) er RSI per definisjon 100.
+        # Unngå divisjon på null ved å fylle inn direkte i stedet for å regne med inf.
         rs = gain / loss
         rsi = 100 - (100 / (1 + rs))
+        rsi = rsi.where(loss != 0, 100.0)
         return rsi
     
     @staticmethod

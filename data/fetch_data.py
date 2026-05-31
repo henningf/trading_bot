@@ -75,7 +75,12 @@ class DataFetcher:
         """
         try:
             data = yf.download(symbol, period='1d', progress=False)
-            latest_price = data['Close'].iloc[-1]
+            if data.empty:
+                self.logger.error(f"Ingen data funnet for {symbol}")
+                return None
+
+            data = self._normalize_columns(data)
+            latest_price = float(data['Close'].iloc[-1])
             self.logger.info(f"Siste pris for {symbol}: {latest_price}")
             return latest_price
         except Exception as e:

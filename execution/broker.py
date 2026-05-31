@@ -18,7 +18,8 @@ class IBKRBroker:
         """
         Koble til IBKR TWS eller Gateway
         
-        OBS: TWS/Gateway må kjøre lokalt på port 7497 (live) eller 7496 (paper)
+        OBS: TWS/Gateway må kjøre lokalt.
+        Standardporter: TWS paper = 7497, TWS live = 7496 (Gateway: paper 4002, live 4001)
         """
         try:
             self.ib.connect(IBKR_HOST, IBKR_PORT, clientId=IBKR_CLIENT_ID)

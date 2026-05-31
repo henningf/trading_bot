@@ -3,7 +3,7 @@ import numpy as np
 from data.fetch_data import DataFetcher
 from analysis.signals import SignalGenerator
 from risk.position_sizing import PositionSizer
-from config.config import START_CAPITAL, IBKR_COMMISSION_PERCENT
+from config.config import START_CAPITAL
 from utils.logger import logger
 
 class Backtest:
@@ -49,15 +49,20 @@ class Backtest:
             signal = row['Signal']
             price = row['Close']
             
-            # KJØ
+            # KJØP
             if signal == 1 and position == 0:
                 shares = self.position_sizer.calculate_position_size(price, price * 0.95)  # 5% stop loss
+
+                # Reduser antall aksjer til vi faktisk har råd (inkl. kurtasje)
+                while shares > 0 and shares * price + self.position_sizer.estimate_commission(shares * price) > self.capital:
+                    shares -= 1
+
                 if shares > 0:
                     position = shares
                     entry_price = price
-                    commission = (shares * price) * IBKR_COMMISSION_PERCENT
+                    commission = self.position_sizer.estimate_commission(shares * price)
                     self.capital -= (shares * price + commission)
-                    
+
                     self.trades.append({
                         'date': idx,
                         'type': 'BUY',
@@ -71,7 +76,7 @@ class Backtest:
             # SELG
             elif signal == -1 and position > 0:
                 revenue = position * price
-                commission = revenue * IBKR_COMMISSION_PERCENT
+                commission = self.position_sizer.estimate_commission(revenue)
                 self.capital += (revenue - commission)
                 
                 profit = revenue - (position * entry_price)
@@ -102,7 +107,23 @@ class Backtest:
         if position > 0:
             final_price = data['Close'].iloc[-1]
             revenue = position * final_price
-            self.capital += revenue
+            commission = self.position_sizer.estimate_commission(revenue)
+            self.capital += (revenue - commission)
+
+            profit = revenue - (position * entry_price)
+            profit_pct = (profit / (position * entry_price)) * 100
+
+            self.trades.append({
+                'date': data.index[-1],
+                'type': 'SELL',
+                'symbol': symbol,
+                'price': final_price,
+                'shares': position,
+                'commission': commission,
+                'profit': profit,
+                'profit_pct': profit_pct
+            })
+            position = 0
         
         return self._calculate_metrics()
     
@@ -111,11 +132,27 @@ class Backtest:
         Beregner ytelsesmålinger
         """
         trades_df = pd.DataFrame(self.trades)
-        portfolio_df = pd.DataFrame(self.portfolio_values)
-        
+
         total_return = ((self.capital - self.initial_capital) / self.initial_capital) * 100
+
+        # Ingen trades: returner nullstilte metrics uten å indeksere manglende kolonner
+        if trades_df.empty:
+            metrics = {
+                'initial_capital': self.initial_capital,
+                'final_capital': self.capital,
+                'total_return_pct': total_return,
+                'total_return_nok': self.capital - self.initial_capital,
+                'total_trades': 0,
+                'profitable_trades': 0,
+                'losing_trades': 0,
+                'win_rate_pct': 0,
+                'trades': []
+            }
+            self.logger.info("Ingen trades utført i backtesten")
+            return metrics
+
         total_trades = len(trades_df[trades_df['type'] == 'BUY'])
-        
+
         # Lønnsomme vs ulønnsom trades
         profitable_trades = trades_df[trades_df['profit'] > 0].shape[0] if 'profit' in trades_df.columns else 0
         losing_trades = trades_df[trades_df['profit'] < 0].shape[0] if 'profit' in trades_df.columns else 0

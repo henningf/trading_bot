@@ -1,5 +1,11 @@
 import pandas as pd
-from config.config import START_CAPITAL, RISK_PER_TRADE, MAX_POSITION_SIZE, IBKR_COMMISSION_PERCENT
+from config.config import (
+    START_CAPITAL,
+    RISK_PER_TRADE,
+    MAX_POSITION_SIZE,
+    IBKR_COMMISSION_PERCENT,
+    IBKR_COMMISSION_MINIMUM,
+)
 from utils.logger import logger
 
 class PositionSizer:
@@ -75,10 +81,10 @@ class PositionSizer:
     
     def estimate_commission(self, order_value: float) -> float:
         """
-        Estimerer IBKR kurtasje
+        Estimerer IBKR kurtasje (prosentbasert, med et gulv på minimumskurtasjen)
         """
         commission = max(
             order_value * IBKR_COMMISSION_PERCENT,
-            IBKR_COMMISSION_PERCENT
+            IBKR_COMMISSION_MINIMUM
         )
         return commission
