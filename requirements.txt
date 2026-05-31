@@ -17,6 +17,7 @@ requests==2.34.2
 
 # Logging & Monitoring
 loguru==0.7.3
+streamlit==1.49.1
 
 # Development (optional)
 pytest==9.0.3

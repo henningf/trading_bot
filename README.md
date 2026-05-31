@@ -1,102 +1,155 @@
 # Trading Bot
 
-En Python-basert trading bot for aksjer og ETF-er via Interactive Brokers.
+Python-basert decision-dashboard for aksjer via Yahoo Finance (analyse/backtest) og Interactive Brokers (live portefoljeoversikt).
 
-## 📋 Beskrivelse
+Prosjektet er laget for trygg overgang fra backtest til reell handel, med fokus pa signaler, risikostyring og tydelig visning av hva modellen faktisk foreslar.
 
-Denne boten automatiserer trading av aksjer og ETF-er med følgende features:
-- Datainnhenting fra markedet
-- Teknisk analyse og signalgenerering
-- Backtesting av strategier
-- Automatisk handel via IBKR API
-- Risikostyring og posisjonsstørrelse
+## Hva du far i dag
 
-## 🎯 Mål
-- Småskalert trading (5000 NOK startkapital)
-- 1-10 trades per måned (fokus på kvalitet)
-- Minimale kurtasjer
+- Backtest per symbol og periode
+- Signal Monitor med anbefalt handling per symbol:
+  - BUY_NOW
+  - SELL_NOW
+  - HOLD_POSITION
+  - WAIT
+- Portfolio-fane som henter apne posisjoner fra IBKR
+- Setup-fane med enkel readiness-sjekk
+- Watchlist som kan oppdateres direkte i GUI
+- Tydelig forklaring nar en periode gir 0 handler (for eksempel ingen BUY-signaler)
 
-## 🏗️ Struktur
+## Markedsstotte (forelopig)
 
-```
+Forelopig er dette bevisst begrenset til:
+
+- Amerikanske tickere uten suffix (for eksempel AAPL, MSFT)
+- Norske tickere pa Yahoo-format med .OL (for eksempel NONG.OL)
+
+Praktisk i appen:
+
+- Hvis du skriver NONG, prover systemet automatisk NONG og deretter NONG.OL
+- Andre markedssuffix (som .ST, .CO) avvises forelopig
+
+## Struktur
+
+```text
 trading_bot/
-├── config/                 # Konfigurasjoner
-│   ├── config.py          # Innstillinger
-│   └── secrets.py         # API-nøkler (ALDRI commit!)
-│
-├── data/
-│   └── fetch_data.py      # Henter prisdata (Yahoo Finance, etc)
-│
-├── analysis/
-│   ├── indicators.py      # Tekniske indikatorer
-│   └── signals.py         # Kjøps-/salgslogikk
-│
-├── backtest/
-│   └── backtest.py        # Backtesting med historisk data
-│
-├── execution/
-│   └── broker.py          # IBKR API-integrasjon
-│
-├── risk/
-│   └── position_sizing.py # Posisjonstørrelse & risikostyring
-│
-├── utils/
-│   └── logger.py          # Logging
-│
-├── main.py                # Orkestrering av hele systemet
-├── requirements.txt       # Dependencies
-├── .env.example           # Template for miljøvariabler
-└── .gitignore             # Ekskluder sensitive filer
+├── analysis/               # Indikatorer og signalregler
+├── backtest/               # Backtestmotor
+├── config/                 # Miljo-/app-konfigurasjon
+├── data/                   # Datainnhenting (Yahoo Finance)
+├── execution/              # IBKR-klient
+├── gui/                    # Streamlit-app
+├── risk/                   # Posisjonsstorrelse og kurtasje
+├── services/               # Tjenestelag brukt av CLI + GUI
+├── tests/                  # Pytest tester
+├── utils/                  # Logger osv
+├── main.py                 # Enkel CLI-entry
+├── requirements.txt
+└── .env.example
 ```
 
-## 🚀 Kom i gang
+## Kom i gang
 
-### Installasjon
+1. Klon repoet
 
-1. Klon repositoriet:
-   ```bash
-   git clone https://github.com/henningf/trading_bot.git
-   cd trading_bot
-   ```
+```bash
+git clone https://github.com/henningf/trading_bot.git
+cd trading_bot
+```
 
-2. Opprett virtuelt miljø:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Mac/Linux
-   venv\Scripts\activate     # Windows
-   ```
+2. Opprett virtuelt miljo
 
-3. Installer dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
 
-4. Konfigurer IBKR-credentials:
-   ```bash
-   cp .env.example .env
-   # Rediger .env med dine IBKR-detaljer
-   ```
+3. Installer avhengigheter
 
-### Kjør boten
+```bash
+pip install -r requirements.txt
+```
+
+4. Opprett lokal konfig
+
+```bash
+cp .env.example .env
+```
+
+5. Rediger .env ved behov (IBKR-innstillinger, symboler, kapital osv)
+
+## Kjoring
+
+### GUI (anbefalt)
+
+Fra prosjektrot:
+
+```bash
+streamlit run gui/app.py
+```
+
+Eller fra gui-mappe:
+
+```bash
+streamlit run app.py
+```
+
+### CLI
 
 ```bash
 python main.py
 ```
 
-## ⚠️ VIKTIG - Risikodisklaimer
+## GUI-arbeidsflyt
 
-- **Denne koden er for læringsformål**
-- Trading innebærer risiko - du kan tape penger
-- Test ALLTID på papirportefølje først
-- Start med små beløp
-- Vær oppmerksom på kurtasjer og skatter
+1. Setup watchlist i sidebar
+2. Kjor Backtest for valgt periode
+3. Se Buy -> Sell pairs i resultatet for historisk timing
+4. Oppdater Portfolio-fane mot IBKR for hva du faktisk eier
+5. Kjor Signal Monitor for konkrete BUY_NOW/SELL_NOW-forslag
 
-## 📚 Ressurser
+## Signalregler (na)
 
-- [Interactive Brokers Python API](https://ibkr-api.ibkr.info/)
-- [ib_insync dokumentasjon](https://ib-insync.readthedocs.io/)
-- [Backtrader dokumentasjon](https://www.backtrader.com/)
+Signalgeneratoren bruker en enkel regelkombinasjon:
 
-## 📝 Lisens
+- BUY nar pris > SMA20, SMA20 > SMA50, og RSI er mellom 30 og 70
+- SELL nar pris < SMA20, eller SMA20 < SMA50, eller RSI > 70
+
+Merk: Dette er en enkel baseline-strategi og ikke investeringsradgivning.
+
+## Dato-validering
+
+Appen validerer perioder tydelig:
+
+- Startdato kan ikke vaere etter sluttdato
+- Startdato kan ikke vaere i fremtiden
+
+Ved ugyldig periode faar du tydelig feilmelding i GUI i stedet for uklar runtime-feil.
+
+## Testing
+
+Kjor alle tester:
+
+```bash
+python -m pytest -q
+```
+
+Prosjektet har regresjonstester for backtest, signaler, datahenting, risikomodul og indikatorer.
+
+## Viktig risiko
+
+- Kun for laering og eksperimentering
+- Trading innebaerer risiko for tap
+- Bruk paper-konto forst
+- Start med sma belop
+
+## Ressurser
+
+- Interactive Brokers Python API
+  - https://ibkr-api.ibkr.info/
+- ib_insync
+  - https://ib-insync.readthedocs.io/
+
+## Lisens
 
 MIT License

@@ -9,7 +9,9 @@ Status-koder: 🔴 kritisk (feil/risiko) · 🟡 bør fikses · 🟢 nice-to-hav
 ## Fremdrift
 - ✅ **2026-05-31:** Alle bugs i seksjon 1 (1.1–1.8) fikset og verifisert i venv.
 - ✅ **2026-05-31:** Testpakke opprettet (`tests/`, `pytest.ini`) — 35 tester, alle grønne, ingen nettverk. Hver bugfiks har en regresjonstest.
-- ⬜ Neste: skille logikk fra CLI (2.8) + konfigurerbare strategiparametre (2.4), deretter Streamlit-GUI (seksjon 5).
+- ✅ **2026-05-31:** Punkt 2.8 del 1 ferdig: gjenbrukbart tjenestelag lagt til i `services/trading_service.py`, og `main.py` bruker nå tjenestelaget.
+- ✅ **2026-05-31:** GUI MVP v1 ferdig: `gui/app.py` med Streamlit-backtestside (inputs + summary + trades).
+- ⬜ Neste: konfigurerbare strategiparametre (2.4) + GUI-fane for live-status (read-only) + risiko-metrics (2.3).
 
 ---
 
@@ -205,6 +207,25 @@ Foreslått funksjonalitet (inkrementelt):
 - Skill logikk fra CLI (2.8) — GUI skal kalle samme funksjoner som tester og CLI
 - Gjør strategiparametre til argumenter (2.4)
 - IBKR event loop må samspille med Streamlits loop (2.7)
+
+### Status 2026-05-31
+- ✅ Logikk separert fra CLI i praksis via `services/trading_service.py`
+- ✅ Første web-GUI er på plass i `gui/app.py`
+- 🟡 Strategiparametre styres fortsatt delvis via config/env; bør flyttes til eksplisitte runtime-argumenter i signal/backtest-kjeden
+
+### Veien Videre (anbefalt faseplan)
+1. **Fase A - Gjør strategien fullt parameterstyrt (kort sikt)**
+  - Legg `sma_short`, `sma_long`, `rsi_buy`, `rsi_sell`, `stop_loss_pct` som argumenter i signal/backtest-funksjoner.
+  - Bruk samme argumentmodell i CLI, tester og GUI (ett felles kontrakt-objekt / dict).
+2. **Fase B - Utvid GUI til beslutningsstotte (kort sikt)**
+  - Legg til grafer for equity curve, drawdown og buy-and-hold benchmark.
+  - Lagre siste kjoring i en lokal resultattabell (CSV/SQLite) for sammenligning av parameter-sett.
+3. **Fase C - Live-status trygt (mellomlang sikt)**
+  - Egen Live-fane med tilkoblingsstatus, konto, posisjoner og tydelig PAPER/LIVE-badge.
+  - Legg inn `PAPER_ONLY=true` som default-vakt og eksplisitt bekreftelse for live-ordre.
+4. **Fase D - API-klar kjerne (mellomlang sikt)**
+  - Ekstraher tjenestelaget til et tydelig API-lag (f.eks. FastAPI) uten å endre domenelogikken.
+  - Da kan Streamlit beholdes som intern dashboard, eller erstattes av React/frontend senere uten omskriving av trading-kjerne.
 
 ### Alternativer
 - **FastAPI + enkel HTML/React-frontend** hvis du vil ha noe nettbasert/flerbrukers senere (mer arbeid).

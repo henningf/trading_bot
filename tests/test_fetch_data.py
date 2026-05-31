@@ -60,3 +60,69 @@ def test_fetch_multiple_returns_dict(monkeypatch):
     result = DataFetcher().fetch_multiple(["AAPL", "MSFT"], "2023-01-01", "2023-01-04")
     assert set(result.keys()) == {"AAPL", "MSFT"}
     assert all(isinstance(v, pd.DataFrame) for v in result.values())
+
+
+def test_fetch_data_fallbacks_to_oslo_suffix(monkeypatch):
+    calls = []
+
+    def fake_download(symbol, *a, **k):
+        calls.append(symbol)
+        if symbol == "NONG":
+            return pd.DataFrame()
+        if symbol == "NONG.OL":
+            return _multiindex_frame()
+        return pd.DataFrame()
+
+    monkeypatch.setattr(fetch_module.yf, "download", fake_download)
+
+    df = DataFetcher().fetch_data("NONG", "2023-01-01", "2023-01-04")
+    assert not df.empty
+    assert calls[:2] == ["NONG", "NONG.OL"]
+
+
+def test_get_latest_price_fallbacks_to_oslo_suffix(monkeypatch):
+    calls = []
+
+    def fake_download(symbol, *a, **k):
+        calls.append(symbol)
+        if symbol == "NONG":
+            return pd.DataFrame()
+        if symbol == "NONG.OL":
+            return _multiindex_frame()
+        return pd.DataFrame()
+
+    monkeypatch.setattr(fetch_module.yf, "download", fake_download)
+
+    price = DataFetcher().get_latest_price("NONG")
+    assert price == pytest.approx(3.5)
+    assert calls[:2] == ["NONG", "NONG.OL"]
+
+
+def test_fetch_data_rejects_unsupported_market_suffix(monkeypatch):
+    called = False
+
+    def fake_download(*a, **k):
+        nonlocal called
+        called = True
+        return _multiindex_frame()
+
+    monkeypatch.setattr(fetch_module.yf, "download", fake_download)
+
+    df = DataFetcher().fetch_data("ERIC.ST", "2023-01-01", "2023-01-04")
+    assert df.empty
+    assert called is False
+
+
+def test_get_latest_price_rejects_unsupported_market_suffix(monkeypatch):
+    called = False
+
+    def fake_download(*a, **k):
+        nonlocal called
+        called = True
+        return _multiindex_frame()
+
+    monkeypatch.setattr(fetch_module.yf, "download", fake_download)
+
+    price = DataFetcher().get_latest_price("ERIC.ST")
+    assert price is None
+    assert called is False

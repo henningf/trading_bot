@@ -11,56 +11,31 @@ Denne filen orkestrerer hele systemet:
 
 import sys
 from utils.logger import logger
-from config.config import STOCK_SYMBOLS, BACKTEST_START_DATE, BACKTEST_END_DATE
-from data.fetch_data import DataFetcher
-from analysis.signals import SignalGenerator
-from backtest.backtest import Backtest
-from execution.broker import IBKRBroker
+from services.trading_service import fetch_live_overview, run_backtests
 
 def run_backtest():
     """
     Kjører backtest på alle symboler
     """
-    logger.info("Starter backtesting...")
-    
-    for symbol in STOCK_SYMBOLS:
-        logger.info(f"\nBacktesting {symbol}...")
-        backtest = Backtest()
-        results = backtest.run(symbol, BACKTEST_START_DATE, BACKTEST_END_DATE)
-        
-        if results:
-            logger.info(f"\nResultater for {symbol}:")
-            logger.info(f"Avkastning: {results['total_return_pct']:.2f}%")
-            logger.info(f"Win rate: {results['win_rate_pct']:.2f}%")
+    run_backtests()
 
 def run_live_trading():
     """
     Kjører live trading (krever IBKR tilkobling)
     """
     logger.info("Starter live trading...")
-    
-    broker = IBKRBroker()
-    
-    # Koble til IBKR
-    if not broker.connect():
+
+    overview = fetch_live_overview()
+    if not overview["connected"]:
         logger.error("Kunne ikke koble til IBKR. Avslutter.")
         return
-    
-    try:
-        # Hent kontooversikt
-        broker.get_account_summary()
-        
-        # Hent aktuelle posisjoner
-        positions = broker.get_positions()
-        
-        logger.info(f"Aktive posisjoner: {len(positions)}")
-        
-        # Her kan du legge til trading logikk
-        # for symbol in STOCK_SYMBOLS:
-        #     broker.place_order(symbol, 10, 'BUY')
-        
-    finally:
-        broker.disconnect()
+
+    positions = overview["positions"]
+    logger.info(f"Aktive posisjoner: {len(positions)}")
+
+    # Her kan du legge til trading logikk
+    # for symbol in STOCK_SYMBOLS:
+    #     broker.place_order(symbol, 10, 'BUY')
 
 def main():
     """
