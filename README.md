@@ -100,6 +100,22 @@ streamlit run app.py
 python main.py
 ```
 
+### Daglig signal-bot (ingen auto-handler)
+
+Kjor en gang per dag (daily candles) og fa varsler om hva som bor vurderes:
+
+```bash
+python daily_signal_bot.py
+```
+
+Boten:
+
+- Henter signaler for watchlist (`STOCK_SYMBOLS`)
+- Tar hensyn til hva du faktisk eier (fra IBKR hvis tilgjengelig)
+- Sender forslag som BUY_NOW / SELL_NOW / HOLD_POSITION
+- Sender manedlig rebalanserings-paminnelse
+- Plasserer ingen ordre automatisk
+
 ## GUI-arbeidsflyt
 
 1. Setup watchlist i sidebar
@@ -125,6 +141,40 @@ Appen validerer perioder tydelig:
 - Startdato kan ikke vaere i fremtiden
 
 Ved ugyldig periode faar du tydelig feilmelding i GUI i stedet for uklar runtime-feil.
+
+## Discord-varsler
+
+Legg webhook i `.env`:
+
+```env
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
+
+Relevante bot-variabler i `.env`:
+
+```env
+DAILY_SIGNAL_LOOKBACK_DAYS=180
+MONTHLY_REBALANCE_DAY=1
+DAILY_BOT_STATE_FILE=.state/daily_signal_bot_state.json
+```
+
+Hvis `DISCORD_WEBHOOK_URL` er tom, skriver boten bare rapporten lokalt.
+
+## Schedulering (1 kjoring per dag)
+
+Eksempel med cron (Mac/Linux):
+
+```bash
+crontab -e
+```
+
+Legg til for kjoring hver dag kl 18:00:
+
+```cron
+0 18 * * * cd /path/to/trading_bot && /path/to/trading_bot/.venv/bin/python daily_signal_bot.py >> logs/daily_signal_bot.log 2>&1
+```
+
+Dette gir deg daglig rapport/varsel uten auto-trading.
 
 ## Testing
 

@@ -33,3 +33,9 @@ LOG_FILE = os.getenv('LOG_FILE', 'logs/trading_bot.log')
 # Kurtasje (IBKR typisk ~0.4% eller $1 minimum)
 IBKR_COMMISSION_PERCENT = float(os.getenv('IBKR_COMMISSION_PERCENT', 0.004))
 IBKR_COMMISSION_MINIMUM = float(os.getenv('IBKR_COMMISSION_MINIMUM', 1.0))  # USD
+
+# Daily signal bot
+DISCORD_WEBHOOK_URL = os.getenv('DISCORD_WEBHOOK_URL', '')
+DAILY_SIGNAL_LOOKBACK_DAYS = int(os.getenv('DAILY_SIGNAL_LOOKBACK_DAYS', 180))
+MONTHLY_REBALANCE_DAY = int(os.getenv('MONTHLY_REBALANCE_DAY', 1))
+DAILY_BOT_STATE_FILE = os.getenv('DAILY_BOT_STATE_FILE', '.state/daily_signal_bot_state.json')
